@@ -39,7 +39,7 @@
 
 # Download deb if needed
 - name: Download Elasticsearch deb
-  get_url: url={{ elasticsearch_download_url }}/elasticsearch-{{ elasticsearch_version }}.deb dest=/tmp/elasticsearch-{{ elasticsearch_version }}.deb mode=0440
+  get_url: url={{ elasticsearch_download_url }}/elasticsearch-{{ elasticsearch_version }}.deb dest=/tmp/elasticsearch-{{ elasticsearch_version }}.deb mode=0440 validate_certs='no'
   when: version_exists.stdout == 'no'
 
 # Uninstall previous version if applicable
@@ -90,6 +90,10 @@
 - lineinfile: dest=/etc/init.d/elasticsearch regexp='^(DAEMON_OPTS=".*-Des.max-open-files=true")$' insertafter='^(DAEMON_OPTS=".*CONF_DIR")$' line='DAEMON_OPTS="$DAEMON_OPTS -Des.max-open-files=true"'
   notify: Restart Elasticsearch
 
+# Config MMap and swap in sysctl
+- sysctl: name="vm.max_map_count" value=262144 sysctl_set=yes state=present reload=yes
+- sysctl: name="vm.swappiness" value=1 sysctl_set=yes state=present reload=yes
+ 
 # Install AWS Plugin
 - include: aws.yml
   when: (elasticsearch_plugin_aws_version is defined)
